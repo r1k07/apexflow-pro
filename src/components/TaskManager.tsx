@@ -3,7 +3,11 @@ import { CheckCircle2, Circle, Calendar, Flag, Plus, Search, Filter } from "luci
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 interface Task {
   id: string;
@@ -17,6 +21,7 @@ interface Task {
 }
 
 const TaskManager = () => {
+  const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([
     {
       id: "1",
@@ -70,6 +75,15 @@ const TaskManager = () => {
 
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    priority: "medium" as "high" | "medium" | "low",
+    project: "",
+    dueDate: "",
+    tags: ""
+  });
 
   const toggleTask = (taskId: string) => {
     setTasks(prev => prev.map(task => 
@@ -93,6 +107,37 @@ const TaskManager = () => {
     ];
     const index = project.length % colors.length;
     return colors[index];
+  };
+
+  const handleAddTask = () => {
+    if (!formData.title.trim()) return;
+    
+    const newTask: Task = {
+      id: Date.now().toString(),
+      title: formData.title,
+      description: formData.description || undefined,
+      completed: false,
+      priority: formData.priority,
+      project: formData.project || "General",
+      dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
+      tags: formData.tags.split(",").map(tag => tag.trim()).filter(Boolean)
+    };
+
+    setTasks(prev => [newTask, ...prev]);
+    setFormData({
+      title: "",
+      description: "",
+      priority: "medium",
+      project: "",
+      dueDate: "",
+      tags: ""
+    });
+    setIsDialogOpen(false);
+    
+    toast({
+      title: "Task created",
+      description: "Your new task has been added successfully.",
+    });
   };
 
   const filteredTasks = tasks.filter(task => {
@@ -120,10 +165,96 @@ const TaskManager = () => {
             {tasks.filter(t => !t.completed).length} pending tasks
           </p>
         </div>
-        <Button className="shadow-glow-blue">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Task
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="shadow-glow-blue">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Task
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px] gradient-card">
+            <DialogHeader>
+              <DialogTitle>Create New Task</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="title">Task Title</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Enter task title..."
+                  className="bg-secondary/50 border-border/50"
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description (optional)</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Add task description..."
+                  className="bg-secondary/50 border-border/50"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="priority">Priority</Label>
+                  <select
+                    id="priority"
+                    value={formData.priority}
+                    onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value as "high" | "medium" | "low" }))}
+                    className="w-full h-10 px-3 rounded-md border border-input bg-secondary/50 text-sm"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="project">Project</Label>
+                  <Input
+                    id="project"
+                    value={formData.project}
+                    onChange={(e) => setFormData(prev => ({ ...prev, project: e.target.value }))}
+                    placeholder="Project name"
+                    className="bg-secondary/50 border-border/50"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="dueDate">Due Date (optional)</Label>
+                  <Input
+                    id="dueDate"
+                    type="date"
+                    value={formData.dueDate}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+                    className="bg-secondary/50 border-border/50"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="tags">Tags (comma separated)</Label>
+                  <Input
+                    id="tags"
+                    value={formData.tags}
+                    onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
+                    placeholder="tag1, tag2, tag3"
+                    className="bg-secondary/50 border-border/50"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddTask}>
+                  Create Task
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search and Filters */}
