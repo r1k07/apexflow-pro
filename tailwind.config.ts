@@ -57,6 +57,25 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Enhanced color palette
+        electric: {
+          blue: "hsl(var(--electric-blue))",
+        },
+        vibrant: {
+          orange: "hsl(var(--vibrant-orange))",
+        },
+        cyan: {
+          bright: "hsl(var(--cyan-bright))",
+        },
+        purple: {
+          accent: "hsl(var(--purple-accent))",
+        },
+        green: {
+          success: "hsl(var(--green-success))",
+        },
+        yellow: {
+          warning: "hsl(var(--yellow-warning))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
