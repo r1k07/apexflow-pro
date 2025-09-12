@@ -8,7 +8,8 @@ import {
   Settings, 
   Menu,
   X,
-  Sparkles
+  Sparkles,
+  Folder
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ const Navigation = () => {
   const navItems = [
     { to: "/", icon: Home, label: "Dashboard" },
     { to: "/tasks", icon: CheckSquare, label: "Tasks" },
+    { to: "/projects", icon: Folder, label: "Projects" },
     { to: "/calendar", icon: Calendar, label: "Calendar" },
     { to: "/notes", icon: FileText, label: "Notes" },
     { to: "/settings", icon: Settings, label: "Settings" }

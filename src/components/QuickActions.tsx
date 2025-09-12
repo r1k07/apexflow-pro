@@ -1,50 +1,38 @@
-import { Calendar, CheckSquare, FileText, Plus, Sparkles, Users } from "lucide-react";
+import { Calendar, CheckSquare, FileText, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const QuickActions = () => {
+  const navigate = useNavigate();
   const quickActions = [
     {
       title: "Add Task",
       description: "Create a new task",
       icon: CheckSquare,
       color: "electric-blue",
-      action: () => console.log("Add task")
+      action: () => navigate("/tasks")
     },
     {
       title: "New Note",
       description: "Quick note taking",
       icon: FileText,
       color: "vibrant-orange",
-      action: () => console.log("New note")
+      action: () => navigate("/notes")
     },
     {
       title: "Schedule Event",
       description: "Add to calendar",
       icon: Calendar,
       color: "cyan-bright",
-      action: () => console.log("Schedule event")
+      action: () => navigate("/calendar")
     },
     {
       title: "Create Project",
       description: "Start new project",
       icon: Sparkles,
       color: "purple-accent",
-      action: () => console.log("Create project")
-    },
-    {
-      title: "Invite Team",
-      description: "Collaborate with others",
-      icon: Users,
-      color: "green-success",
-      action: () => console.log("Invite team")
-    },
-    {
-      title: "Quick Add",
-      description: "Smart input",
-      icon: Plus,
-      color: "yellow-warning",
-      action: () => console.log("Quick add")
+      action: () => navigate("/projects")
     }
   ];
 
@@ -54,7 +42,7 @@ export const QuickActions = () => {
         <CardTitle className="text-foreground">Quick Actions</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {quickActions.map((action, index) => (
             <Button
               key={index}

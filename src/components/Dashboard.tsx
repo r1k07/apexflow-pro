@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ProgressCircle } from "./ProgressCircle";
 import { QuickActions } from "./QuickActions";
+import QuickNotes from "./QuickNotes";
 
 interface Task {
   id: string;
@@ -42,7 +43,7 @@ const Dashboard = () => {
   const todayTasks = tasks.filter(t => !t.completed).length;
 
   return (
-    <div className="min-h-screen p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -164,6 +165,9 @@ const Dashboard = () => {
           ))}
         </CardContent>
       </Card>
+
+      {/* Quick Notes */}
+      <QuickNotes />
 
       {/* Quick Actions */}
       <QuickActions />
