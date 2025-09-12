@@ -8,6 +8,8 @@ import Tasks from "./pages/Tasks";
 import CalendarPage from "./pages/CalendarPage";
 import Notes from "./pages/Notes";
 import Settings from "./pages/Settings";
+import Timer from "./pages/Timer";
+import Pomodoro from "./pages/Pomodoro";
 import Projects from "./pages/Projects";
 import NotFound from "./pages/NotFound";
 
@@ -25,6 +27,8 @@ const App = () => (
           <Route path="/projects" element={<Projects />} />
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/notes" element={<Notes />} />
+          <Route path="/timer" element={<Timer />} />
+          <Route path="/pomodoro" element={<Pomodoro />} />
           <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

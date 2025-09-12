@@ -9,7 +9,9 @@ import {
   Menu,
   X,
   Sparkles,
-  Folder
+  Folder,
+  Timer,
+  Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -24,6 +26,8 @@ const Navigation = () => {
     { to: "/projects", icon: Folder, label: "Projects" },
     { to: "/calendar", icon: Calendar, label: "Calendar" },
     { to: "/notes", icon: FileText, label: "Notes" },
+    { to: "/timer", icon: Timer, label: "Timer" },
+    { to: "/pomodoro", icon: Clock, label: "Pomodoro" },
     { to: "/settings", icon: Settings, label: "Settings" }
   ];
 
