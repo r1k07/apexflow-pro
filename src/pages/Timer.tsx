@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Layout from "@/components/Layout";
 
 const Timer = () => {
+  const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(25);
   const [seconds, setSeconds] = useState(0);
   const [totalSeconds, setTotalSeconds] = useState(25 * 60);
@@ -36,25 +37,35 @@ const Timer = () => {
 
   const handleReset = () => {
     setIsRunning(false);
-    const newTotal = minutes * 60;
+    const newTotal = hours * 3600 + minutes * 60;
     setTotalSeconds(newTotal);
     setSeconds(0);
   };
 
-  const adjustMinutes = (increment: boolean) => {
+  const adjustTime = (type: 'hours' | 'minutes', increment: boolean) => {
     if (!isRunning) {
-      const newMinutes = increment ? minutes + 1 : Math.max(1, minutes - 1);
-      setMinutes(newMinutes);
-      setTotalSeconds(newMinutes * 60);
+      if (type === 'hours') {
+        const newHours = increment ? hours + 1 : Math.max(0, hours - 1);
+        setHours(newHours);
+        setTotalSeconds(newHours * 3600 + minutes * 60);
+      } else {
+        const newMinutes = increment ? Math.min(59, minutes + 1) : Math.max(0, minutes - 1);
+        setMinutes(newMinutes);
+        setTotalSeconds(hours * 3600 + newMinutes * 60);
+      }
       setSeconds(0);
     }
   };
 
-  const formatTime = (mins: number, secs: number) => {
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  const formatTime = (totalSecs: number) => {
+    const h = Math.floor(totalSecs / 3600);
+    const m = Math.floor((totalSecs % 3600) / 60);
+    const s = totalSecs % 60;
+    return h > 0 ? `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}` : `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const progressPercent = ((minutes * 60 - totalSeconds) / (minutes * 60)) * 100;
+  const initialTotal = hours * 3600 + minutes * 60;
+  const progressPercent = initialTotal > 0 ? ((initialTotal - totalSeconds) / initialTotal) * 100 : 0;
 
   return (
     <Layout>
@@ -67,10 +78,10 @@ const Timer = () => {
             {/* Time Display */}
             <div className="text-center">
               <div 
-                className="text-8xl font-mono font-bold text-electric-blue mb-4"
+                className="text-6xl font-mono font-bold text-electric-blue mb-4"
                 style={{ fontVariantNumeric: 'tabular-nums' }}
               >
-                {formatTime(Math.floor(totalSeconds / 60), totalSeconds % 60)}
+                {formatTime(totalSeconds)}
               </div>
               
               {/* Progress Circle */}
@@ -101,26 +112,54 @@ const Timer = () => {
 
             {/* Time Controls */}
             {!isRunning && (
-              <div className="flex items-center justify-center space-x-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => adjustMinutes(false)}
-                  className="h-12 w-12 p-0"
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <span className="text-sm text-muted-foreground min-w-20 text-center">
-                  {minutes} minutes
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => adjustMinutes(true)}
-                  className="h-12 w-12 p-0"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+              <div className="space-y-4">
+                <div className="flex items-center justify-center space-x-4">
+                  <div className="flex flex-col items-center space-y-2">
+                    <span className="text-xs text-muted-foreground">Hours</span>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => adjustTime('hours', false)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="text-lg font-mono w-8 text-center">{hours.toString().padStart(2, '0')}</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => adjustTime('hours', true)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold text-muted-foreground">:</div>
+                  <div className="flex flex-col items-center space-y-2">
+                    <span className="text-xs text-muted-foreground">Minutes</span>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => adjustTime('minutes', false)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="text-lg font-mono w-8 text-center">{minutes.toString().padStart(2, '0')}</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => adjustTime('minutes', true)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 

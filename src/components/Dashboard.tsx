@@ -55,10 +55,10 @@ const Dashboard = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="icon" className="hover-lift">
+          <Button variant="outline" size="icon" className="hover-lift" onClick={() => alert('Search functionality coming soon!')}>
             <Search className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" className="hover-lift">
+          <Button variant="outline" size="icon" className="hover-lift" onClick={() => window.location.href = '/settings'}>
             <Settings className="h-4 w-4" />
           </Button>
         </div>
@@ -136,7 +136,7 @@ const Dashboard = () => {
         <CardHeader>
           <CardTitle className="text-foreground flex items-center justify-between">
             Active Projects
-            <Button size="sm" className="shadow-glow-blue">
+            <Button size="sm" className="shadow-glow-blue" onClick={() => alert('New Project dialog coming soon!')}>
               <Plus className="h-4 w-4 mr-2" />
               New Project
             </Button>
