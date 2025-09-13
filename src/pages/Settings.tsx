@@ -38,8 +38,18 @@ const Settings = () => {
   });
 
   const handleSaveSettings = () => {
-    // Here you would typically save to a backend or localStorage
-    localStorage.setItem('taskflow-settings', JSON.stringify(settings));
+    // Save to localStorage
+    localStorage.setItem('apexflow-settings', JSON.stringify(settings));
+    
+    // Apply theme change
+    if (settings.appearance.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+    }
+    
     toast({
       title: "Settings saved",
       description: "Your preferences have been updated successfully.",

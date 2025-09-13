@@ -45,14 +45,27 @@ const QuickNotes = () => {
     const colors = ["yellow-warning", "electric-blue", "green-success", "vibrant-orange", "purple-accent"];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
     
+    // Find a position that doesn't overlap with existing notes
+    let position = { x: 50, y: 50 };
+    let attempts = 0;
+    while (attempts < 20) {
+      const overlapping = notes.some(note => 
+        Math.abs(note.position.x - position.x) < 120 && 
+        Math.abs(note.position.y - position.y) < 80
+      );
+      if (!overlapping) break;
+      position = { 
+        x: Math.random() * 180 + 20, 
+        y: Math.random() * 80 + 20 
+      };
+      attempts++;
+    }
+    
     const newNote: Note = {
       id: Date.now().toString(),
       content: "New note...",
       color: randomColor,
-      position: { 
-        x: Math.random() * 200 + 50, 
-        y: Math.random() * 100 + 50 
-      },
+      position,
       zIndex: highestZIndex + 1
     };
 
@@ -132,7 +145,7 @@ const QuickNotes = () => {
               const rect = e.currentTarget.parentElement!.getBoundingClientRect();
               const x = e.clientX - rect.left - data.offsetX;
               const y = e.clientY - rect.top - data.offsetY;
-              moveNote(data.id, { x: Math.max(0, Math.min(x, 300)), y: Math.max(0, Math.min(y, 150)) });
+              moveNote(data.id, { x: Math.max(0, Math.min(x, 250)), y: Math.max(0, Math.min(y, 120)) });
             }}
             draggable
           >

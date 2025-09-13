@@ -11,14 +11,19 @@ import {
   Sparkles,
   Folder,
   Timer,
-  Clock
+  Clock,
+  Moon,
+  Sun,
+  LogIn
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/hooks/useTheme";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
 
   const navItems = [
     { to: "/", icon: Home, label: "Dashboard" },
@@ -63,7 +68,7 @@ const Navigation = () => {
               <Sparkles className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">TaskFlow</h1>
+              <h1 className="text-xl font-bold text-foreground">ApexFlow</h1>
               <p className="text-xs text-muted-foreground">Productivity Suite</p>
             </div>
           </div>
@@ -88,8 +93,30 @@ const Navigation = () => {
             ))}
           </div>
 
+          {/* Bottom actions */}
+          <div className="space-y-2 pt-4 border-t border-border/30">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleTheme}
+              className="w-full justify-start text-muted-foreground hover:text-foreground"
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4 mr-3" /> : <Moon className="h-4 w-4 mr-3" />}
+              <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.location.href = '/auth'}
+              className="w-full justify-start text-muted-foreground hover:text-foreground"
+            >
+              <LogIn className="h-4 w-4 mr-3" />
+              <span>Sign In</span>
+            </Button>
+          </div>
+
           {/* User Profile */}
-          <div className="pt-6 border-t border-border/30">
+          <div className="pt-4">
             <div className="flex items-center space-x-3 p-4 rounded-lg bg-secondary/30">
               <div className="w-10 h-10 bg-gradient-secondary rounded-full flex items-center justify-center">
                 <span className="text-sm font-bold text-white">JD</span>
