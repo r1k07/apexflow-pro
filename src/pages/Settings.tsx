@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User, Bell, Palette, Shield, Download, Upload, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,16 +8,16 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "@/hooks/useTheme";
+import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/Layout";
 
 const Settings = () => {
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [settings, setSettings] = useState({
-    profile: {
-      name: "Alex Morgan",
-      email: "alex.morgan@example.com",
-      avatar: ""
-    },
     notifications: {
       emailNotifications: true,
       pushNotifications: true,
@@ -25,7 +25,6 @@ const Settings = () => {
       weeklyDigest: false
     },
     appearance: {
-      theme: "dark",
       compactMode: false,
       showCompleted: true,
       animationsEnabled: true
@@ -37,17 +36,44 @@ const Settings = () => {
     }
   });
 
-  const handleSaveSettings = () => {
+  useEffect(() => {
+    const loadUserData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        setProfile(profileData);
+      }
+    };
+
+    const loadSettings = () => {
+      const saved = localStorage.getItem('apexflow-settings');
+      if (saved) {
+        setSettings(JSON.parse(saved));
+      }
+    };
+
+    loadUserData();
+    loadSettings();
+  }, []);
+
+  const handleSaveSettings = async () => {
     // Save to localStorage
     localStorage.setItem('apexflow-settings', JSON.stringify(settings));
     
-    // Apply theme change
-    if (settings.appearance.theme === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
-    } else {
-      document.documentElement.classList.add('light');
-      document.documentElement.classList.remove('dark');
+    // Update profile if user is logged in
+    if (user && profile) {
+      await supabase
+        .from('profiles')
+        .update({
+          display_name: profile.display_name,
+          avatar_url: profile.avatar_url
+        })
+        .eq('user_id', user.id);
     }
     
     toast({
@@ -110,11 +136,11 @@ const Settings = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name">Display Name</Label>
                 <Input
                   id="name"
-                  value={settings.profile.name}
-                  onChange={(e) => updateSetting('profile', 'name', e.target.value)}
+                  value={profile?.display_name || user?.email?.split('@')[0] || ''}
+                  onChange={(e) => setProfile(prev => ({ ...prev, display_name: e.target.value }))}
                   className="bg-secondary/50 border-border/50"
                 />
               </div>
@@ -123,9 +149,9 @@ const Settings = () => {
                 <Input
                   id="email"
                   type="email"
-                  value={settings.profile.email}
-                  onChange={(e) => updateSetting('profile', 'email', e.target.value)}
-                  className="bg-secondary/50 border-border/50"
+                  value={user?.email || ''}
+                  disabled
+                  className="bg-secondary/50 border-border/50 opacity-60"
                 />
               </div>
               <div>
@@ -208,16 +234,16 @@ const Settings = () => {
                 <Label>Theme</Label>
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   <Button
-                    variant={settings.appearance.theme === "dark" ? "default" : "outline"}
+                    variant={theme === "dark" ? "default" : "outline"}
                     size="sm"
-                    onClick={() => updateSetting('appearance', 'theme', 'dark')}
+                    onClick={() => setTheme('dark')}
                   >
                     Dark
                   </Button>
                   <Button
-                    variant={settings.appearance.theme === "light" ? "default" : "outline"}
+                    variant={theme === "light" ? "default" : "outline"}
                     size="sm"
-                    onClick={() => updateSetting('appearance', 'theme', 'light')}
+                    onClick={() => setTheme('light')}
                   >
                     Light
                   </Button>

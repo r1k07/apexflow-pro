@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StickyNote, Plus, X, Edit3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,34 +15,39 @@ interface Note {
 
 const QuickNotes = () => {
   const { toast } = useToast();
-  const [notes, setNotes] = useState<Note[]>([
-    {
-      id: "1",
-      content: "Remember to review the quarterly reports",
-      color: "yellow-warning",
-      position: { x: 20, y: 20 },
-      zIndex: 1
-    },
-    {
-      id: "2", 
-      content: "Team meeting scheduled for tomorrow at 3 PM",
-      color: "electric-blue",
-      position: { x: 180, y: 20 },
-      zIndex: 2
-    },
-    {
-      id: "3",
-      content: "Buy groceries on the way home",
-      color: "green-success",
-      position: { x: 100, y: 120 },
-      zIndex: 3
-    }
-  ]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [editingNote, setEditingNote] = useState<string | null>(null);
-  const [highestZIndex, setHighestZIndex] = useState(3);
+  const [highestZIndex, setHighestZIndex] = useState(1);
+
+  useEffect(() => {
+    // Load notes from localStorage
+    const savedNotes = localStorage.getItem('quick-notes');
+    if (savedNotes) {
+      const parsed = JSON.parse(savedNotes);
+      setNotes(parsed.notes || []);
+      setHighestZIndex(parsed.highestZIndex || 1);
+    } else {
+      // Default notes
+      const defaultNotes = [
+        {
+          id: "1",
+          content: "Welcome to Quick Notes!",
+          color: "secondary",
+          position: { x: 20, y: 20 },
+          zIndex: 1
+        }
+      ];
+      setNotes(defaultNotes);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Save notes to localStorage whenever they change
+    localStorage.setItem('quick-notes', JSON.stringify({ notes, highestZIndex }));
+  }, [notes, highestZIndex]);
 
   const addNote = () => {
-    const colors = ["yellow-warning", "electric-blue", "green-success", "vibrant-orange", "purple-accent"];
+    const colors = ["secondary", "muted", "accent"];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
     
     // Find a position that doesn't overlap with existing notes
@@ -150,11 +155,7 @@ const QuickNotes = () => {
             draggable
           >
             <div
-              className="w-40 h-24 p-3 rounded-lg shadow-lg border-l-4 relative bg-opacity-90 backdrop-blur-sm"
-              style={{
-                backgroundColor: `hsl(var(--${note.color}) / 0.3)`,
-                borderLeftColor: `hsl(var(--${note.color}))`
-              }}
+              className="w-40 h-24 p-3 rounded-lg shadow-card border border-border/30 relative bg-card/90 backdrop-blur-sm"
             >
               <Button
                 variant="ghost"

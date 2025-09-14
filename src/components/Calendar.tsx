@@ -1,8 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 interface CalendarEvent {
   id: string;
@@ -15,47 +21,112 @@ interface CalendarEvent {
 }
 
 const Calendar = () => {
+  const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<"day" | "week" | "month">("day");
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    title: "",
+    description: "",
+    date: "",
+    startTime: "",
+    endTime: "",
+    type: "meeting" as CalendarEvent["type"]
+  });
 
-  const [events] = useState<CalendarEvent[]>([
-    {
-      id: "1",
-      title: "Team Standup",
-      description: "Daily team sync meeting",
-      start: new Date(2024, 0, 9, 9, 0),
-      end: new Date(2024, 0, 9, 9, 30),
-      type: "meeting",
-      color: "electric-blue"
-    },
-    {
-      id: "2",
-      title: "Design Review",
-      description: "Review new dashboard designs",
-      start: new Date(2024, 0, 9, 14, 0),
-      end: new Date(2024, 0, 9, 15, 30),
-      type: "meeting",
-      color: "vibrant-orange"
-    },
-    {
-      id: "3",
-      title: "Code deadline",
-      description: "Submit feature implementation",
-      start: new Date(2024, 0, 9, 17, 0),
-      end: new Date(2024, 0, 9, 17, 0),
-      type: "task",
-      color: "cyan-bright"
-    },
-    {
-      id: "4",
-      title: "Client presentation",
-      description: "Present Q1 roadmap to stakeholders",
-      start: new Date(2024, 0, 10, 10, 0),
-      end: new Date(2024, 0, 10, 11, 30),
-      type: "meeting",
-      color: "purple-accent"
+  useEffect(() => {
+    // Load events from localStorage
+    const savedEvents = localStorage.getItem('calendar-events');
+    if (savedEvents) {
+      const parsed = JSON.parse(savedEvents);
+      setEvents(parsed.map((e: any) => ({
+        ...e,
+        start: new Date(e.start),
+        end: new Date(e.end)
+      })));
+    } else {
+      // Default events
+      const defaultEvents = [
+        {
+          id: "1",
+          title: "Team Standup",
+          description: "Daily team sync meeting",
+          start: new Date(2024, 0, 9, 9, 0),
+          end: new Date(2024, 0, 9, 9, 30),
+          type: "meeting" as const,
+          color: "electric-blue"
+        },
+        {
+          id: "2",
+          title: "Design Review",
+          description: "Review new dashboard designs",
+          start: new Date(2024, 0, 9, 14, 0),
+          end: new Date(2024, 0, 9, 15, 30),
+          type: "meeting" as const,
+          color: "vibrant-orange"
+        }
+      ];
+      setEvents(defaultEvents);
     }
-  ]);
+  }, []);
+
+  useEffect(() => {
+    // Save events to localStorage whenever they change
+    localStorage.setItem('calendar-events', JSON.stringify(events));
+  }, [events]);
+
+  const handleCreateEvent = () => {
+    if (!newEvent.title || !newEvent.date || !newEvent.startTime) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in title, date, and start time.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const startDateTime = new Date(`${newEvent.date}T${newEvent.startTime}`);
+    const endDateTime = newEvent.endTime 
+      ? new Date(`${newEvent.date}T${newEvent.endTime}`)
+      : new Date(startDateTime.getTime() + 30 * 60 * 1000); // Default 30 min
+
+    const event: CalendarEvent = {
+      id: Date.now().toString(),
+      title: newEvent.title,
+      description: newEvent.description,
+      start: startDateTime,
+      end: endDateTime,
+      type: newEvent.type,
+      color: getColorForType(newEvent.type)
+    };
+
+    setEvents(prev => [...prev, event]);
+    setNewEvent({
+      title: "",
+      description: "",
+      date: "",
+      startTime: "",
+      endTime: "",
+      type: "meeting"
+    });
+    setIsDialogOpen(false);
+    
+    toast({
+      title: "Event created",
+      description: "Your new event has been added to the calendar.",
+    });
+  };
+
+  const getColorForType = (type: CalendarEvent["type"]) => {
+    const colors = {
+      meeting: "electric-blue",
+      task: "cyan-bright",
+      reminder: "yellow-warning",
+      event: "vibrant-orange"
+    };
+    return colors[type];
+  };
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -102,7 +173,7 @@ const Calendar = () => {
           <h1 className="text-3xl font-bold text-foreground">Calendar</h1>
           <p className="text-muted-foreground">{formatDate(currentDate)}</p>
         </div>
-        <Button className="shadow-glow-blue">
+        <Button className="shadow-glow-blue" onClick={() => setIsDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           New Event
         </Button>
@@ -297,6 +368,95 @@ const Calendar = () => {
           </Card>
         </div>
       </div>
+
+      {/* New Event Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Event</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <Label htmlFor="event-title">Title</Label>
+              <Input
+                id="event-title"
+                value={newEvent.title}
+                onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Event title"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="event-description">Description (optional)</Label>
+              <Textarea
+                id="event-description"
+                value={newEvent.description}
+                onChange={(e) => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Event description"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="event-date">Date</Label>
+                <Input
+                  id="event-date"
+                  type="date"
+                  value={newEvent.date}
+                  onChange={(e) => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="event-type">Type</Label>
+                <Select value={newEvent.type} onValueChange={(value: CalendarEvent["type"]) => 
+                  setNewEvent(prev => ({ ...prev, type: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="meeting">Meeting</SelectItem>
+                    <SelectItem value="task">Task</SelectItem>
+                    <SelectItem value="reminder">Reminder</SelectItem>
+                    <SelectItem value="event">Event</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="start-time">Start Time</Label>
+                <Input
+                  id="start-time"
+                  type="time"
+                  value={newEvent.startTime}
+                  onChange={(e) => setNewEvent(prev => ({ ...prev, startTime: e.target.value }))}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="end-time">End Time (optional)</Label>
+                <Input
+                  id="end-time"
+                  type="time"
+                  value={newEvent.endTime}
+                  onChange={(e) => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateEvent}>
+                Create Event
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

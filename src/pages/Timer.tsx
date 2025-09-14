@@ -1,16 +1,24 @@
 import { useState, useEffect } from "react";
-import { Play, Pause, RotateCcw, Plus, Minus } from "lucide-react";
+import { Play, Pause, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import Layout from "@/components/Layout";
 
 const Timer = () => {
   const [hours, setHours] = useState(0);
-  const [minutes, setMinutes] = useState(25);
+  const [minutes, setMinutes] = useState(5);
   const [seconds, setSeconds] = useState(0);
-  const [totalSeconds, setTotalSeconds] = useState(25 * 60);
+  const [totalSeconds, setTotalSeconds] = useState(300);
   const [isRunning, setIsRunning] = useState(false);
+  const [initialTime, setInitialTime] = useState(300);
+  const [inputHours, setInputHours] = useState("0");
+  const [inputMinutes, setInputMinutes] = useState("5");
 
+  // Timer countdown logic
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
@@ -18,18 +26,52 @@ const Timer = () => {
       interval = setInterval(() => {
         setTotalSeconds(prev => {
           const newTotal = prev - 1;
-          setMinutes(Math.floor(newTotal / 60));
+          setHours(Math.floor(newTotal / 3600));
+          setMinutes(Math.floor((newTotal % 3600) / 60));
           setSeconds(newTotal % 60);
           return newTotal;
         });
       }, 1000);
     } else if (totalSeconds === 0) {
       setIsRunning(false);
-      // Timer finished - could add notification here
     }
 
     return () => clearInterval(interval);
   }, [isRunning, totalSeconds]);
+
+  // Handle input changes
+  const handleTimeInput = () => {
+    if (isRunning) return;
+    
+    const h = Math.max(0, Math.min(23, parseInt(inputHours) || 0));
+    const m = Math.max(0, Math.min(59, parseInt(inputMinutes) || 0));
+    
+    setHours(h);
+    setMinutes(m);
+    setSeconds(0);
+    
+    const newTotal = h * 3600 + m * 60;
+    setTotalSeconds(newTotal);
+    setInitialTime(newTotal);
+    
+    // Save to localStorage
+    localStorage.setItem('timer-settings', JSON.stringify({ hours: h, minutes: m }));
+  };
+
+  useEffect(() => {
+    // Load saved timer settings
+    const saved = localStorage.getItem('timer-settings');
+    if (saved) {
+      const { hours: savedH, minutes: savedM } = JSON.parse(saved);
+      setInputHours(savedH.toString());
+      setInputMinutes(savedM.toString());
+      setHours(savedH);
+      setMinutes(savedM);
+      const newTotal = savedH * 3600 + savedM * 60;
+      setTotalSeconds(newTotal);
+      setInitialTime(newTotal);
+    }
+  }, []);
 
   const handleStart = () => {
     setIsRunning(!isRunning);
@@ -37,35 +79,22 @@ const Timer = () => {
 
   const handleReset = () => {
     setIsRunning(false);
-    const newTotal = hours * 3600 + minutes * 60;
-    setTotalSeconds(newTotal);
-    setSeconds(0);
-  };
-
-  const adjustTime = (type: 'hours' | 'minutes', increment: boolean) => {
-    if (!isRunning) {
-      if (type === 'hours') {
-        const newHours = increment ? hours + 1 : Math.max(0, hours - 1);
-        setHours(newHours);
-        setTotalSeconds(newHours * 3600 + minutes * 60);
-      } else {
-        const newMinutes = increment ? Math.min(59, minutes + 1) : Math.max(0, minutes - 1);
-        setMinutes(newMinutes);
-        setTotalSeconds(hours * 3600 + newMinutes * 60);
-      }
-      setSeconds(0);
-    }
+    setTotalSeconds(initialTime);
+    setHours(Math.floor(initialTime / 3600));
+    setMinutes(Math.floor((initialTime % 3600) / 60));
+    setSeconds(initialTime % 60);
   };
 
   const formatTime = (totalSecs: number) => {
     const h = Math.floor(totalSecs / 3600);
     const m = Math.floor((totalSecs % 3600) / 60);
     const s = totalSecs % 60;
-    return h > 0 ? `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}` : `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    return h > 0 
+      ? `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}` 
+      : `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const initialTotal = hours * 3600 + minutes * 60;
-  const progressPercent = initialTotal > 0 ? ((initialTotal - totalSeconds) / initialTotal) * 100 : 0;
+  const progressPercent = initialTime > 0 ? ((initialTime - totalSeconds) / initialTime) * 100 : 0;
 
   return (
     <Layout>
@@ -110,58 +139,44 @@ const Timer = () => {
               </div>
             </div>
 
-            {/* Time Controls */}
-            {!isRunning && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-center space-x-4">
-                  <div className="flex flex-col items-center space-y-2">
-                    <span className="text-xs text-muted-foreground">Hours</span>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => adjustTime('hours', false)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      <span className="text-lg font-mono w-8 text-center">{hours.toString().padStart(2, '0')}</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => adjustTime('hours', true)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold text-muted-foreground">:</div>
-                  <div className="flex flex-col items-center space-y-2">
-                    <span className="text-xs text-muted-foreground">Minutes</span>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => adjustTime('minutes', false)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      <span className="text-lg font-mono w-8 text-center">{minutes.toString().padStart(2, '0')}</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => adjustTime('minutes', true)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+            {/* Timer Input Controls */}
+            <div className="flex items-center justify-center space-x-6 mb-8">
+              <div className="flex flex-col items-center space-y-2">
+                <Label htmlFor="hours" className="text-sm text-muted-foreground">Hours</Label>
+                <Input
+                  id="hours"
+                  type="number"
+                  min="0"
+                  max="23"
+                  value={inputHours}
+                  onChange={(e) => setInputHours(e.target.value)}
+                  onBlur={handleTimeInput}
+                  onKeyDown={(e) => e.key === 'Enter' && handleTimeInput()}
+                  disabled={isRunning}
+                  className="w-20 text-center bg-secondary/50 border-border/50"
+                />
               </div>
-            )}
+              
+              <div className="flex items-center justify-center text-3xl font-bold text-foreground pt-6">
+                :
+              </div>
+
+              <div className="flex flex-col items-center space-y-2">
+                <Label htmlFor="minutes" className="text-sm text-muted-foreground">Minutes</Label>
+                <Input
+                  id="minutes"
+                  type="number"
+                  min="0"
+                  max="59"
+                  value={inputMinutes}
+                  onChange={(e) => setInputMinutes(e.target.value)}
+                  onBlur={handleTimeInput}
+                  onKeyDown={(e) => e.key === 'Enter' && handleTimeInput()}
+                  disabled={isRunning}
+                  className="w-20 text-center bg-secondary/50 border-border/50"
+                />
+              </div>
+            </div>
 
             {/* Action Buttons */}
             <div className="flex justify-center space-x-4">
@@ -196,10 +211,10 @@ const Timer = () => {
 
             {/* Status */}
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">
+              <Badge variant="outline" className="text-sm">
                 {totalSeconds === 0 ? "Time's up!" : 
                  isRunning ? "Timer running..." : "Timer paused"}
-              </p>
+              </Badge>
             </div>
           </CardContent>
         </Card>

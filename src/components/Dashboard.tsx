@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Calendar, CheckCircle, Clock, Plus, Search, Settings, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +27,7 @@ interface Project {
 }
 
 const Dashboard = () => {
+  const [userDisplayName, setUserDisplayName] = useState<string>('');
   const [tasks] = useState<Task[]>([
     { id: "1", title: "Design new landing page", completed: false, priority: "high", project: "Website Redesign" },
     { id: "2", title: "Review user feedback", completed: false, priority: "medium", project: "User Research" },
@@ -42,13 +44,34 @@ const Dashboard = () => {
   const completionRate = Math.round((tasks.filter(t => t.completed).length / tasks.length) * 100);
   const todayTasks = tasks.filter(t => !t.completed).length;
 
+  useEffect(() => {
+    const loadUserName = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        
+        const name = profile?.display_name || 
+                     session.user.user_metadata?.display_name || 
+                     session.user.email?.split('@')[0] || 
+                     'User';
+        setUserDisplayName(name);
+      }
+    };
+
+    loadUserName();
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">
-            Good morning! 🌟
+            Good morning{userDisplayName ? `, ${userDisplayName}` : ''}! 🌟
           </h1>
           <p className="text-muted-foreground">
             You have {todayTasks} tasks to complete today
