@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CheckCircle2, Circle, Calendar, Flag, Plus, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,6 +72,23 @@ const TaskManager = () => {
       tags: ["maintenance", "security"]
     }
   ]);
+
+  // Load and persist tasks
+  useEffect(() => {
+    const stored = localStorage.getItem('apexflow-tasks');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as any[];
+        setTasks(parsed.map(t => ({ ...t, dueDate: t.dueDate ? new Date(t.dueDate) : undefined })));
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('apexflow-tasks', JSON.stringify(tasks));
+  }, [tasks]);
 
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
   const [searchTerm, setSearchTerm] = useState("");

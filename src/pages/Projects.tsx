@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CheckCircle2, Circle, Plus, Folder, Calendar, User, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,7 +83,30 @@ const Projects = () => {
     }
   ]);
 
+  // Load & persist projects
+  useEffect(() => {
+    const stored = localStorage.getItem('apexflow-projects');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as any[];
+        setProjects(parsed.map(p => ({
+          ...p,
+          dueDate: p.dueDate ? new Date(p.dueDate) : undefined,
+          tasks: (p.tasks || []).map((t: any) => ({ ...t }))
+        }))
+        );
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('apexflow-projects', JSON.stringify(projects));
+  }, [projects]);
+ 
   const toggleTask = (projectId: string, taskId: string) => {
+    let nextSelected: Project | null = null;
     setProjects(prev => prev.map(project => {
       if (project.id === projectId) {
         const updatedTasks = project.tasks.map(task =>
@@ -91,23 +114,15 @@ const Projects = () => {
         );
         const completedTasks = updatedTasks.filter(task => task.completed).length;
         const progress = Math.round((completedTasks / updatedTasks.length) * 100);
-        
-        return { ...project, tasks: updatedTasks, progress };
+        const updatedProject = { ...project, tasks: updatedTasks, progress };
+        if (selectedProject && selectedProject.id === projectId) {
+          nextSelected = updatedProject;
+        }
+        return updatedProject;
       }
       return project;
     }));
-
-    if (selectedProject) {
-      const updatedProject = projects.find(p => p.id === projectId);
-      if (updatedProject) {
-        setSelectedProject({
-          ...updatedProject,
-          tasks: updatedProject.tasks.map(task =>
-            task.id === taskId ? { ...task, completed: !task.completed } : task
-          )
-        });
-      }
-    }
+    if (nextSelected) setSelectedProject(nextSelected);
   };
 
   if (selectedProject) {

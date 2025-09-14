@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { 
   Home, 
@@ -19,11 +19,54 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/hooks/useTheme";
+import { supabase } from "@/integrations/supabase/client";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
+  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
+  const [initials, setInitials] = useState<string>("AU");
+  const [authenticated, setAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const setFromSession = async (session: any) => {
+      const user = session.user;
+      setEmail(user.email ?? null);
+      // Try to get profile display_name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      const name = profile?.display_name || user.user_metadata?.display_name || user.email?.split('@')[0] || null;
+      setDisplayName(name);
+      const nameForInitials = name || user.email || 'AU';
+      const parts = nameForInitials.split(/[\s@._-]+/).filter(Boolean);
+      const init = parts.slice(0, 2).map(p => p[0]?.toUpperCase()).join('');
+      setInitials(init || 'AU');
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthenticated(!!session);
+      if (session?.user) {
+        setTimeout(() => setFromSession(session), 0);
+      } else {
+        setDisplayName(null);
+        setEmail(null);
+        setInitials('AU');
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthenticated(!!session);
+      if (session?.user) setFromSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
 
   const navItems = [
     { to: "/", icon: Home, label: "Dashboard" },
