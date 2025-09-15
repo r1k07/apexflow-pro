@@ -16,7 +16,8 @@ export const ProgressCircle = ({
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const strokeDasharray = `${circumference} ${circumference}`;
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
+  const safeProgress = isNaN(progress) ? 0 : Math.max(0, Math.min(100, progress));
+  const strokeDashoffset = circumference - (safeProgress / 100) * circumference;
 
   return (
     <div className={`relative ${className}`} style={{ width: size, height: size }}>
@@ -55,7 +56,7 @@ export const ProgressCircle = ({
       {/* Center text */}
       <div className="absolute inset-0 flex items-center justify-center">
         <span className="text-lg font-bold text-foreground">
-          {progress}%
+          {safeProgress}%
         </span>
       </div>
     </div>

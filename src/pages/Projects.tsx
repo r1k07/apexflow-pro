@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
+import ProjectForm from "@/components/ProjectForm";
 
 interface ProjectTask {
   id: string;
@@ -29,6 +30,7 @@ interface Project {
 const Projects = () => {
   const navigate = useNavigate();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [showProjectForm, setShowProjectForm] = useState(false);
   const [projects, setProjects] = useState<Project[]>([
     {
       id: "1",
@@ -116,44 +118,49 @@ const Projects = () => {
   }, [projects]);
  
   const toggleTask = (projectId: string, taskId: string) => {
-    let nextSelected: Project | null = null;
-    setProjects(prev => prev.map(project => {
-      if (project.id === projectId) {
-        const updatedTasks = project.tasks.map(task =>
-          task.id === taskId ? { ...task, completed: !task.completed } : task
-        );
-        const completedTasks = updatedTasks.filter(task => task.completed).length;
-        const progress = Math.round((completedTasks / updatedTasks.length) * 100);
-        const updatedProject = { ...project, tasks: updatedTasks, progress };
-        if (selectedProject && selectedProject.id === projectId) {
-          nextSelected = updatedProject;
+    setProjects(prev => {
+      const updated = prev.map(project => {
+        if (project.id === projectId) {
+          const updatedTasks = project.tasks.map(task =>
+            task.id === taskId ? { ...task, completed: !task.completed } : task
+          );
+          const completedTasks = updatedTasks.filter(task => task.completed).length;
+          const progress = updatedTasks.length > 0 ? Math.round((completedTasks / updatedTasks.length) * 100) : 0;
+          const updatedProject = { ...project, tasks: updatedTasks, progress };
+          
+          // Update selected project immediately if it's the one being modified
+          if (selectedProject && selectedProject.id === projectId) {
+            setSelectedProject(updatedProject);
+          }
+          
+          return updatedProject;
         }
-        return updatedProject;
-      }
-      return project;
-    }));
-    if (nextSelected) setSelectedProject(nextSelected);
+        return project;
+      });
+      
+      // Persist to localStorage immediately
+      localStorage.setItem('apexflow-projects', JSON.stringify(updated));
+      window.dispatchEvent(new Event('apexflow-projects-updated'));
+      
+      return updated;
+    });
   };
 
-  const addNewProject = () => {
+  const handleCreateProject = (projectData: Omit<Project, 'id' | 'progress'>) => {
     const newProject: Project = {
       id: Date.now().toString(),
-      name: "Untitled Project",
-      description: "Add a description...",
+      ...projectData,
       progress: 0,
-      color: "electric-blue",
-      tasks: [],
-      dueDate: undefined,
-      team: []
     };
     setProjects(prev => [...prev, newProject]);
+    setShowProjectForm(false);
     setSelectedProject(newProject);
   };
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('new') === '1') {
-      addNewProject();
+      setShowProjectForm(true);
       params.delete('new');
       const newSearch = params.toString();
       const newUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}`;
@@ -256,7 +263,7 @@ const Projects = () => {
               Manage your ongoing projects and track progress
             </p>
           </div>
-          <Button className="shadow-glow-blue" onClick={addNewProject}>
+          <Button className="shadow-glow-blue" onClick={() => setShowProjectForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
             New Project
           </Button>
@@ -309,6 +316,13 @@ const Projects = () => {
             </Card>
           ))}
         </div>
+
+        {showProjectForm && (
+          <ProjectForm
+            onClose={() => setShowProjectForm(false)}
+            onSave={handleCreateProject}
+          />
+        )}
       </div>
     </Layout>
   );

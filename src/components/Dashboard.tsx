@@ -96,6 +96,10 @@ const Dashboard = () => {
   const completionRate = Math.round((tasks.filter(t => t.completed).length / tasks.length) * 100);
   const todayTasks = tasks.filter(t => !t.completed).length;
 
+  const handleNewProject = () => {
+    window.location.href = '/projects?new=1';
+  };
+
   useEffect(() => {
     const loadUserName = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -211,7 +215,7 @@ const Dashboard = () => {
         <CardHeader>
           <CardTitle className="text-foreground flex items-center justify-between">
             Active Projects
-            <Button size="sm" className="shadow-glow-blue" onClick={() => { window.location.href = '/projects?new=1'; }}>
+            <Button size="sm" className="shadow-glow-blue hover-lift" onClick={handleNewProject}>
               <Plus className="h-4 w-4 mr-2" />
               New Project
             </Button>

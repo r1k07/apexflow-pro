@@ -1,12 +1,12 @@
 import Dashboard from "@/components/Dashboard";
 import Layout from "@/components/Layout";
-import PixelArtWidget from "@/components/PixelArtWidget";
+import DescriptionPanel from "@/components/DescriptionPanel";
 
 const Index = () => {
   return (
     <Layout>
+      <DescriptionPanel />
       <div className="p-6">
-        <PixelArtWidget />
         <Dashboard />
       </div>
     </Layout>
