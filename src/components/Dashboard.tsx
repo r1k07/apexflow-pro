@@ -28,18 +28,70 @@ interface Project {
 
 const Dashboard = () => {
   const [userDisplayName, setUserDisplayName] = useState<string>('');
-  const [tasks] = useState<Task[]>([
-    { id: "1", title: "Design new landing page", completed: false, priority: "high", project: "Website Redesign" },
-    { id: "2", title: "Review user feedback", completed: false, priority: "medium", project: "User Research" },
-    { id: "3", title: "Update documentation", completed: true, priority: "low", project: "Development" },
-    { id: "4", title: "Plan sprint meeting", completed: false, priority: "high", project: "Management" },
-  ]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
 
-  const [projects] = useState<Project[]>([
-    { id: "1", name: "Website Redesign", progress: 75, color: "electric-blue", totalTasks: 12, completedTasks: 9 },
-    { id: "2", name: "Mobile App", progress: 45, color: "vibrant-orange", totalTasks: 8, completedTasks: 4 },
-    { id: "3", name: "User Research", progress: 90, color: "cyan-bright", totalTasks: 10, completedTasks: 9 },
-  ]);
+  const loadTasks = () => {
+    try {
+      const stored = localStorage.getItem('apexflow-tasks');
+      if (stored) {
+        const parsed = JSON.parse(stored) as any[];
+        setTasks(parsed.map(t => ({ ...t, dueDate: t.dueDate ? new Date(t.dueDate) : undefined })));
+      } else {
+        setTasks([]);
+      }
+    } catch {
+      setTasks([]);
+    }
+  };
+
+  const computeProgress = (completed: number, total: number) =>
+    total > 0 ? Math.round((completed / total) * 100) : 0;
+
+  const loadProjects = () => {
+    try {
+      const stored = localStorage.getItem('apexflow-projects');
+      if (stored) {
+        const parsed = JSON.parse(stored) as any[];
+        setProjects(parsed.map((p) => {
+          const tasks = (p.tasks || []) as any[];
+          const completed = tasks.filter((t: any) => t.completed).length;
+          const progress = computeProgress(completed, tasks.length);
+          return {
+            ...p,
+            dueDate: p.dueDate ? new Date(p.dueDate) : undefined,
+            progress,
+          } as Project;
+        }));
+      } else {
+        setProjects([]);
+      }
+    } catch {
+      setProjects([]);
+    }
+  };
+
+  useEffect(() => {
+    loadTasks();
+    loadProjects();
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'apexflow-tasks') loadTasks();
+      if (e.key === 'apexflow-projects') loadProjects();
+    };
+    const onTasksUpdated = () => loadTasks();
+    const onProjectsUpdated = () => loadProjects();
+
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('apexflow-tasks-updated', onTasksUpdated as EventListener);
+    window.addEventListener('apexflow-projects-updated', onProjectsUpdated as EventListener);
+
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('apexflow-tasks-updated', onTasksUpdated as EventListener);
+      window.removeEventListener('apexflow-projects-updated', onProjectsUpdated as EventListener);
+    };
+  }, []);
 
   const completionRate = Math.round((tasks.filter(t => t.completed).length / tasks.length) * 100);
   const todayTasks = tasks.filter(t => !t.completed).length;
@@ -159,7 +211,7 @@ const Dashboard = () => {
         <CardHeader>
           <CardTitle className="text-foreground flex items-center justify-between">
             Active Projects
-            <Button size="sm" className="shadow-glow-blue" onClick={() => alert('New Project dialog coming soon!')}>
+            <Button size="sm" className="shadow-glow-blue" onClick={() => { window.location.href = '/projects?new=1'; }}>
               <Plus className="h-4 w-4 mr-2" />
               New Project
             </Button>
@@ -171,7 +223,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div 
-                    className={`w-3 h-3 rounded-full bg-${project.color}`}
+                    className={`w-3 h-3 rounded-full`}
                     style={{ backgroundColor: `hsl(var(--${project.color}))` }}
                   />
                   <span className="font-medium text-foreground">{project.name}</span>

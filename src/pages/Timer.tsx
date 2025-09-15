@@ -79,10 +79,13 @@ const Timer = () => {
 
   const handleReset = () => {
     setIsRunning(false);
-    setTotalSeconds(initialTime);
-    setHours(Math.floor(initialTime / 3600));
-    setMinutes(Math.floor((initialTime % 3600) / 60));
-    setSeconds(initialTime % 60);
+    setTotalSeconds(0);
+    setInitialTime(0);
+    setHours(0);
+    setMinutes(0);
+    setSeconds(0);
+    setInputHours("0");
+    setInputMinutes("0");
   };
 
   const formatTime = (totalSecs: number) => {

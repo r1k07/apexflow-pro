@@ -88,6 +88,8 @@ const TaskManager = () => {
 
   useEffect(() => {
     localStorage.setItem('apexflow-tasks', JSON.stringify(tasks));
+    // Notify other components (like Dashboard) to refresh
+    window.dispatchEvent(new Event('apexflow-tasks-updated'));
   }, [tasks]);
 
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");

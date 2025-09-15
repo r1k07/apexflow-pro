@@ -34,7 +34,7 @@ const Projects = () => {
       id: "1",
       name: "Website Redesign",
       description: "Complete overhaul of the company website with modern design",
-      progress: 75,
+      progress: 0,
       color: "electric-blue",
       team: ["John Doe", "Jane Smith", "Mike Johnson"],
       dueDate: new Date("2024-02-15"),
@@ -51,7 +51,7 @@ const Projects = () => {
       id: "2",
       name: "Mobile App Development",
       description: "Native mobile app for iOS and Android platforms",
-      progress: 45,
+      progress: 0,
       color: "vibrant-orange",
       team: ["Sarah Wilson", "Alex Chen"],
       dueDate: new Date("2024-03-30"),
@@ -68,7 +68,7 @@ const Projects = () => {
       id: "3",
       name: "User Research Project",
       description: "Comprehensive study of user behavior and preferences",
-      progress: 90,
+      progress: 0,
       color: "cyan-bright",
       team: ["Emma Davis", "Tom Brown"],
       dueDate: new Date("2024-01-25"),
@@ -81,7 +81,10 @@ const Projects = () => {
         { id: "6", title: "Present findings", completed: false }
       ]
     }
-  ]);
+  ].map((p) => ({
+    ...p,
+    progress: p.tasks.length ? Math.round((p.tasks.filter(t => t.completed).length / p.tasks.length) * 100) : 0
+  })));
 
   // Load & persist projects
   useEffect(() => {
@@ -89,12 +92,17 @@ const Projects = () => {
     if (stored) {
       try {
         const parsed = JSON.parse(stored) as any[];
-        setProjects(parsed.map(p => ({
-          ...p,
-          dueDate: p.dueDate ? new Date(p.dueDate) : undefined,
-          tasks: (p.tasks || []).map((t: any) => ({ ...t }))
-        }))
-        );
+        setProjects(parsed.map(p => {
+          const tasks = (p.tasks || []).map((t: any) => ({ ...t }));
+          const completed = tasks.filter((t: any) => t.completed).length;
+          const progress = tasks.length ? Math.round((completed / tasks.length) * 100) : 0;
+          return {
+            ...p,
+            dueDate: p.dueDate ? new Date(p.dueDate) : undefined,
+            tasks,
+            progress
+          } as Project;
+        }));
       } catch {
         // ignore
       }
@@ -103,6 +111,8 @@ const Projects = () => {
 
   useEffect(() => {
     localStorage.setItem('apexflow-projects', JSON.stringify(projects));
+    // Notify other parts of the app
+    window.dispatchEvent(new Event('apexflow-projects-updated'));
   }, [projects]);
  
   const toggleTask = (projectId: string, taskId: string) => {
@@ -124,6 +134,32 @@ const Projects = () => {
     }));
     if (nextSelected) setSelectedProject(nextSelected);
   };
+
+  const addNewProject = () => {
+    const newProject: Project = {
+      id: Date.now().toString(),
+      name: "Untitled Project",
+      description: "Add a description...",
+      progress: 0,
+      color: "electric-blue",
+      tasks: [],
+      dueDate: undefined,
+      team: []
+    };
+    setProjects(prev => [...prev, newProject]);
+    setSelectedProject(newProject);
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('new') === '1') {
+      addNewProject();
+      params.delete('new');
+      const newSearch = params.toString();
+      const newUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
 
   if (selectedProject) {
     return (
@@ -220,7 +256,7 @@ const Projects = () => {
               Manage your ongoing projects and track progress
             </p>
           </div>
-          <Button className="shadow-glow-blue">
+          <Button className="shadow-glow-blue" onClick={addNewProject}>
             <Plus className="h-4 w-4 mr-2" />
             New Project
           </Button>
