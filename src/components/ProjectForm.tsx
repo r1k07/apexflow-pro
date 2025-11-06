@@ -25,12 +25,17 @@ interface Project {
 interface ProjectFormProps {
   onClose: () => void;
   onSave: (project: Omit<Project, 'id' | 'progress'>) => void;
+  initialProject?: Project | null;
 }
 
-const ProjectForm = ({ onClose, onSave }: ProjectFormProps) => {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [tasks, setTasks] = useState<Omit<ProjectTask, 'id' | 'completed'>[]>([{ title: "" }]);
+const ProjectForm = ({ onClose, onSave, initialProject }: ProjectFormProps) => {
+  const [name, setName] = useState(initialProject?.name || "");
+  const [description, setDescription] = useState(initialProject?.description || "");
+  const [tasks, setTasks] = useState<Omit<ProjectTask, 'id' | 'completed'>[]>(
+    initialProject?.tasks && initialProject.tasks.length > 0
+      ? initialProject.tasks.map(t => ({ title: t.title }))
+      : [{ title: "" }]
+  );
 
   const addTask = () => {
     setTasks([...tasks, { title: "" }]);
@@ -54,15 +59,16 @@ const ProjectForm = ({ onClose, onSave }: ProjectFormProps) => {
       .map((task, index) => ({
         id: `task-${index + 1}`,
         title: task.title.trim(),
-        completed: false
+        completed: initialProject?.tasks[index]?.completed || false
       }));
 
     onSave({
       name: name.trim(),
       description: description.trim() || "Add a description...",
-      color: "electric-blue",
+      color: initialProject?.color || "electric-blue",
       tasks: projectTasks,
-      team: []
+      team: initialProject?.team || [],
+      dueDate: initialProject?.dueDate
     });
   };
 
@@ -70,7 +76,9 @@ const ProjectForm = ({ onClose, onSave }: ProjectFormProps) => {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-2xl gradient-card shadow-elevated animate-scale-in">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-foreground">Create New Project</CardTitle>
+          <CardTitle className="text-foreground">
+            {initialProject ? "Edit Project" : "Create New Project"}
+          </CardTitle>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
@@ -140,7 +148,7 @@ const ProjectForm = ({ onClose, onSave }: ProjectFormProps) => {
               disabled={!name.trim()}
               className="shadow-glow-blue"
             >
-              Create Project
+              {initialProject ? "Update Project" : "Create Project"}
             </Button>
           </div>
         </CardContent>

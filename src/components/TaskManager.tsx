@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CheckCircle2, Circle, Calendar, Flag, Plus, Search, Filter } from "lucide-react";
+import { CheckCircle2, Circle, Calendar, Flag, Plus, Search, Filter, Trash2, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface Task {
@@ -18,6 +28,7 @@ interface Task {
   project: string;
   dueDate?: Date;
   tags: string[];
+  completedAt?: number;
 }
 
 const TaskManager = () => {
@@ -92,9 +103,41 @@ const TaskManager = () => {
     window.dispatchEvent(new Event('apexflow-tasks-updated'));
   }, [tasks]);
 
+  // Auto-delete completed tasks after 24 hours
+  useEffect(() => {
+    const checkExpiredTasks = () => {
+      const now = Date.now();
+      const updatedTasks = tasks.filter(task => {
+        if (task.completed && task.completedAt) {
+          const hoursElapsed = (now - task.completedAt) / (1000 * 60 * 60);
+          return hoursElapsed < 24;
+        }
+        return true;
+      });
+      
+      if (updatedTasks.length !== tasks.length) {
+        setTasks(updatedTasks);
+        toast({
+          title: "Tasks auto-deleted",
+          description: "Completed tasks older than 24 hours have been removed.",
+        });
+      }
+    };
+
+    // Check every hour
+    const interval = setInterval(checkExpiredTasks, 1000 * 60 * 60);
+    // Also check on mount
+    checkExpiredTasks();
+
+    return () => clearInterval(interval);
+  }, [tasks, toast]);
+
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -106,8 +149,93 @@ const TaskManager = () => {
 
   const toggleTask = (taskId: string) => {
     setTasks(prev => prev.map(task => 
-      task.id === taskId ? { ...task, completed: !task.completed } : task
+      task.id === taskId 
+        ? { 
+            ...task, 
+            completed: !task.completed,
+            completedAt: !task.completed ? Date.now() : undefined
+          } 
+        : task
     ));
+  };
+
+  const handleAddTask = () => {
+    if (!formData.title.trim()) return;
+    
+    if (editingTask) {
+      // Update existing task
+      setTasks(prev => prev.map(task =>
+        task.id === editingTask.id
+          ? {
+              ...task,
+              title: formData.title,
+              description: formData.description || undefined,
+              priority: formData.priority,
+              project: formData.project || "General",
+              dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
+              tags: formData.tags.split(",").map(tag => tag.trim()).filter(Boolean)
+            }
+          : task
+      ));
+      
+      toast({
+        title: "Task updated",
+        description: "Your task has been updated successfully.",
+      });
+    } else {
+      // Create new task
+      const newTask: Task = {
+        id: Date.now().toString(),
+        title: formData.title,
+        description: formData.description || undefined,
+        completed: false,
+        priority: formData.priority,
+        project: formData.project || "General",
+        dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
+        tags: formData.tags.split(",").map(tag => tag.trim()).filter(Boolean)
+      };
+
+      setTasks(prev => [newTask, ...prev]);
+      
+      toast({
+        title: "Task created",
+        description: "Your new task has been added successfully.",
+      });
+    }
+    
+    setFormData({
+      title: "",
+      description: "",
+      priority: "medium",
+      project: "",
+      dueDate: "",
+      tags: ""
+    });
+    setIsDialogOpen(false);
+    setEditingTask(null);
+  };
+
+  const handleDeleteTask = (taskId: string) => {
+    setTasks(prev => prev.filter(task => task.id !== taskId));
+    toast({
+      title: "Task deleted",
+      description: "Your task has been removed successfully.",
+    });
+    setDeleteDialogOpen(false);
+    setTaskToDelete(null);
+  };
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setFormData({
+      title: task.title,
+      description: task.description || "",
+      priority: task.priority,
+      project: task.project,
+      dueDate: task.dueDate ? task.dueDate.toISOString().split('T')[0] : "",
+      tags: task.tags.join(", ")
+    });
+    setIsDialogOpen(true);
   };
 
   const getPriorityColor = (priority: string) => {
@@ -126,37 +254,6 @@ const TaskManager = () => {
     ];
     const index = project.length % colors.length;
     return colors[index];
-  };
-
-  const handleAddTask = () => {
-    if (!formData.title.trim()) return;
-    
-    const newTask: Task = {
-      id: Date.now().toString(),
-      title: formData.title,
-      description: formData.description || undefined,
-      completed: false,
-      priority: formData.priority,
-      project: formData.project || "General",
-      dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
-      tags: formData.tags.split(",").map(tag => tag.trim()).filter(Boolean)
-    };
-
-    setTasks(prev => [newTask, ...prev]);
-    setFormData({
-      title: "",
-      description: "",
-      priority: "medium",
-      project: "",
-      dueDate: "",
-      tags: ""
-    });
-    setIsDialogOpen(false);
-    
-    toast({
-      title: "Task created",
-      description: "Your new task has been added successfully.",
-    });
   };
 
   const filteredTasks = tasks.filter(task => {
@@ -184,7 +281,20 @@ const TaskManager = () => {
             {tasks.filter(t => !t.completed).length} pending tasks
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            setEditingTask(null);
+            setFormData({
+              title: "",
+              description: "",
+              priority: "medium",
+              project: "",
+              dueDate: "",
+              tags: ""
+            });
+          }
+        }}>
           <DialogTrigger asChild>
             <Button className="shadow-glow-blue">
               <Plus className="h-4 w-4 mr-2" />
@@ -193,7 +303,7 @@ const TaskManager = () => {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px] gradient-card">
             <DialogHeader>
-              <DialogTitle>Create New Task</DialogTitle>
+              <DialogTitle>{editingTask ? "Edit Task" : "Create New Task"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -264,11 +374,14 @@ const TaskManager = () => {
                 </div>
               </div>
               <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button variant="outline" onClick={() => {
+                  setIsDialogOpen(false);
+                  setEditingTask(null);
+                }}>
                   Cancel
                 </Button>
                 <Button onClick={handleAddTask}>
-                  Create Task
+                  {editingTask ? "Update Task" : "Create Task"}
                 </Button>
               </div>
             </div>
@@ -351,6 +464,25 @@ const TaskManager = () => {
                       {task.title}
                     </h3>
                     <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditTask(task)}
+                        className="h-8 w-8 hover:bg-secondary/80"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setTaskToDelete(task.id);
+                          setDeleteDialogOpen(true);
+                        }}
+                        className="h-8 w-8 hover:bg-destructive/10 text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                       <Badge 
                         variant="outline" 
                         className={getPriorityColor(task.priority)}
@@ -421,6 +553,26 @@ const TaskManager = () => {
           </CardContent>
         </Card>
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => taskToDelete && handleDeleteTask(taskToDelete)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

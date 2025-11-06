@@ -14,7 +14,8 @@ import {
   Clock,
   Moon,
   Sun,
-  LogIn
+  LogIn,
+  FileImage
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -76,6 +77,7 @@ const Navigation = () => {
     { to: "/notes", icon: FileText, label: "Notes" },
     { to: "/timer", icon: Timer, label: "Timer" },
     { to: "/pomodoro", icon: Clock, label: "Pomodoro" },
+    { to: "/image-to-pdf", icon: FileImage, label: "Image to PDF" },
     { to: "/settings", icon: Settings, label: "Settings" }
   ];
 

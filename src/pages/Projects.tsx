@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CheckCircle2, Circle, Plus, Folder, Calendar, User, ArrowLeft } from "lucide-react";
+import { CheckCircle2, Circle, Plus, Folder, Calendar, User, ArrowLeft, Trash2, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -7,6 +7,17 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import ProjectForm from "@/components/ProjectForm";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface ProjectTask {
   id: string;
@@ -31,6 +42,9 @@ const Projects = () => {
   const navigate = useNavigate();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showProjectForm, setShowProjectForm] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [projects, setProjects] = useState<Project[]>([
     {
       id: "1",
@@ -147,14 +161,46 @@ const Projects = () => {
   };
 
   const handleCreateProject = (projectData: Omit<Project, 'id' | 'progress'>) => {
-    const newProject: Project = {
-      id: Date.now().toString(),
-      ...projectData,
-      progress: 0,
-    };
-    setProjects(prev => [...prev, newProject]);
+    if (editingProject) {
+      // Update existing project
+      const updatedProjects = projects.map(p =>
+        p.id === editingProject.id
+          ? { ...projectData, id: p.id, progress: p.progress }
+          : p
+      );
+      setProjects(updatedProjects);
+      if (selectedProject?.id === editingProject.id) {
+        setSelectedProject({ ...projectData, id: editingProject.id, progress: editingProject.progress });
+      }
+      toast.success("Project updated successfully");
+    } else {
+      // Create new project
+      const newProject: Project = {
+        id: Date.now().toString(),
+        ...projectData,
+        progress: 0,
+      };
+      setProjects(prev => [...prev, newProject]);
+      setSelectedProject(newProject);
+      toast.success("Project created successfully");
+    }
     setShowProjectForm(false);
-    setSelectedProject(newProject);
+    setEditingProject(null);
+  };
+
+  const handleDeleteProject = (projectId: string) => {
+    setProjects(projects.filter(p => p.id !== projectId));
+    if (selectedProject?.id === projectId) {
+      setSelectedProject(null);
+    }
+    toast.success("Project deleted successfully");
+    setDeleteDialogOpen(false);
+    setProjectToDelete(null);
+  };
+
+  const handleEditProject = (project: Project) => {
+    setEditingProject(project);
+    setShowProjectForm(true);
   };
 
   useEffect(() => {
@@ -187,6 +233,26 @@ const Projects = () => {
               </div>
             </div>
             <div className="flex items-center space-x-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleEditProject(selectedProject)}
+              >
+                <Edit2 className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setProjectToDelete(selectedProject.id);
+                  setDeleteDialogOpen(true);
+                }}
+                className="hover:bg-destructive/10 text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
               <Badge variant="outline" className="text-cyan-bright bg-cyan-bright/10">
                 <Calendar className="h-3 w-3 mr-1" />
                 {selectedProject.dueDate?.toLocaleDateString()}
@@ -317,12 +383,36 @@ const Projects = () => {
           ))}
         </div>
 
-        {showProjectForm && (
-          <ProjectForm
-            onClose={() => setShowProjectForm(false)}
-            onSave={handleCreateProject}
-          />
-        )}
+      {showProjectForm && (
+        <ProjectForm
+          onClose={() => {
+            setShowProjectForm(false);
+            setEditingProject(null);
+          }}
+          onSave={handleCreateProject}
+          initialProject={editingProject}
+        />
+      )}
+      
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this project? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => projectToDelete && handleDeleteProject(projectToDelete)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       </div>
     </Layout>
   );

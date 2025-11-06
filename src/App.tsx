@@ -12,6 +12,7 @@ import Settings from "./pages/Settings";
 import Timer from "./pages/Timer";
 import Pomodoro from "./pages/Pomodoro";
 import Projects from "./pages/Projects";
+import ImageToPdf from "./pages/ImageToPdf";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/notes" element={<Notes />} />
             <Route path="/timer" element={<Timer />} />
             <Route path="/pomodoro" element={<Pomodoro />} />
+            <Route path="/image-to-pdf" element={<ImageToPdf />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/auth" element={<Auth />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
