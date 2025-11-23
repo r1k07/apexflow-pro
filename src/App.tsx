@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { AuthProvider, ProtectedRoute } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Tasks from "./pages/Tasks";
 import CalendarPage from "./pages/CalendarPage";
@@ -21,26 +22,28 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider defaultTheme="dark" storageKey="apexflow-theme">
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/tasks" element={<Tasks />} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/calendar" element={<CalendarPage />} />
-            <Route path="/notes" element={<Notes />} />
-            <Route path="/timer" element={<Timer />} />
-            <Route path="/pomodoro" element={<Pomodoro />} />
-            <Route path="/image-to-pdf" element={<ImageToPdf />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/auth" element={<Auth />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+              <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+              <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
+              <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
+              <Route path="/timer" element={<ProtectedRoute><Timer /></ProtectedRoute>} />
+              <Route path="/pomodoro" element={<ProtectedRoute><Pomodoro /></ProtectedRoute>} />
+              <Route path="/image-to-pdf" element={<ProtectedRoute><ImageToPdf /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

@@ -13,7 +13,7 @@ interface ProjectTask {
 
 interface Project {
   id: string;
-  name: string;
+  title: string;
   description: string;
   progress: number;
   color: string;
@@ -24,12 +24,12 @@ interface Project {
 
 interface ProjectFormProps {
   onClose: () => void;
-  onSave: (project: Omit<Project, 'id' | 'progress'>) => void;
+  onSave: (project: { name: string; description: string; color?: string; tasks?: ProjectTask[]; team?: string[]; dueDate?: Date }) => void;
   initialProject?: Project | null;
 }
 
 const ProjectForm = ({ onClose, onSave, initialProject }: ProjectFormProps) => {
-  const [name, setName] = useState(initialProject?.name || "");
+  const [name, setName] = useState(initialProject?.title || "");
   const [description, setDescription] = useState(initialProject?.description || "");
   const [tasks, setTasks] = useState<Omit<ProjectTask, 'id' | 'completed'>[]>(
     initialProject?.tasks && initialProject.tasks.length > 0
